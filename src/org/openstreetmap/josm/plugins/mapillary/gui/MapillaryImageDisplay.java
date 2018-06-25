@@ -173,9 +173,7 @@ public class MapillaryImageDisplay extends JComponent {
       }
       if (image != null && Math.min(getSize().getWidth(), getSize().getHeight()) > 0) {
         if (MapillaryImageDisplay.this.pano) {
-          Point click = comp2imgCoord(visibleRect, e.getX(), e.getY());
-          Vector3D vec = cameraPlane.getVector3D(click.x, click.y);
-          cameraPlane.setRotation(vec);
+          cameraPlane.setRotation(comp2imgCoord(visibleRect, e.getX(), e.getY()));
         } else {
           if (e.getButton() == MapillaryProperties.PICTURE_OPTION_BUTTON.get()) {
             if (!MapillaryImageDisplay.this.visibleRect.equals(new Rectangle(0, 0, image.getWidth(null), image.getHeight(null)))) {
@@ -222,8 +220,6 @@ public class MapillaryImageDisplay extends JComponent {
         MapillaryImageDisplay.this.selectedRect = null;
         return;
       }
-      if (pano)
-        return;
       Image image;
       Rectangle visibleRect;
       synchronized (MapillaryImageDisplay.this) {
@@ -252,8 +248,6 @@ public class MapillaryImageDisplay extends JComponent {
     public void mouseDragged(MouseEvent e) {
       if (!this.mouseIsDragging && MapillaryImageDisplay.this.selectedRect == null)
         return;
-      if (pano)
-        return;
       Image image;
       Rectangle visibleRect;
       synchronized (MapillaryImageDisplay.this) {
@@ -266,14 +260,18 @@ public class MapillaryImageDisplay extends JComponent {
         return;
       }
       if (this.mouseIsDragging) {
-        Point p = comp2imgCoord(visibleRect, e.getX(), e.getY());
-        visibleRect.x += this.mousePointInImg.x - p.x;
-        visibleRect.y += this.mousePointInImg.y - p.y;
-        checkVisibleRectPos(image, visibleRect);
-        synchronized (MapillaryImageDisplay.this) {
-          MapillaryImageDisplay.this.visibleRect = visibleRect;
+        if (MapillaryImageDisplay.this.pano) {
+          // do nothing.
+        } else {
+          Point p = comp2imgCoord(visibleRect, e.getX(), e.getY());
+          visibleRect.x += this.mousePointInImg.x - p.x;
+          visibleRect.y += this.mousePointInImg.y - p.y;
+          checkVisibleRectPos(image, visibleRect);
+          synchronized (MapillaryImageDisplay.this) {
+            MapillaryImageDisplay.this.visibleRect = visibleRect;
+          }
+          MapillaryImageDisplay.this.repaint();
         }
-        MapillaryImageDisplay.this.repaint();
       } else if (MapillaryImageDisplay.this.selectedRect != null) {
         Point p = comp2imgCoord(visibleRect, e.getX(), e.getY());
         checkPointInVisibleRect(p, visibleRect);
@@ -294,8 +292,6 @@ public class MapillaryImageDisplay extends JComponent {
     public void mouseReleased(MouseEvent e) {
       if (!this.mouseIsDragging && MapillaryImageDisplay.this.selectedRect == null)
         return;
-      if (pano)
-        return;
       Image image;
       synchronized (MapillaryImageDisplay.this) {
         image = getImage();
@@ -305,8 +301,17 @@ public class MapillaryImageDisplay extends JComponent {
         MapillaryImageDisplay.this.selectedRect = null;
         return;
       }
+      /*
+       * When dragging panorama photo, re-calcurate rotation when release.
+       * For normal photo, just stop dragging flag because redraw during dragging.
+       */
       if (this.mouseIsDragging) {
         this.mouseIsDragging = false;
+        if (MapillaryImageDisplay.this.pano) {
+          Point current = comp2imgCoord(visibleRect, e.getX(), e.getY());
+          cameraPlane.setRotationFromDelta(mousePointInImg, current);
+          MapillaryImageDisplay.this.repaint();
+        }
       } else if (MapillaryImageDisplay.this.selectedRect != null) {
         int oldWidth = MapillaryImageDisplay.this.selectedRect.width;
         int oldHeight = MapillaryImageDisplay.this.selectedRect.height;
