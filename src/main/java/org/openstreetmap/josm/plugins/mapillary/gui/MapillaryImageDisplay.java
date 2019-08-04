@@ -38,6 +38,7 @@ import org.openstreetmap.josm.plugins.mapillary.gui.panorama.CameraPlane;
 import org.openstreetmap.josm.plugins.mapillary.gui.panorama.UVMapping;
 import org.openstreetmap.josm.plugins.mapillary.model.ImageDetection;
 import org.openstreetmap.josm.plugins.mapillary.model.MapObject;
+import org.openstreetmap.josm.plugins.mapillary.utils.ImageMetaDataUtil;
 import org.openstreetmap.josm.plugins.mapillary.utils.MapillaryColorScheme;
 import org.openstreetmap.josm.plugins.mapillary.utils.MapillaryProperties;
 
@@ -450,6 +451,10 @@ public class MapillaryImageDisplay extends JPanel {
       }
       this.selectedRect = null;
       if (image != null) {
+        if (!this.pano) {
+          // double check panorama, workaround for issue #88.
+          this.pano = ImageMetaDataUtil.getPanorama(image);
+        }
         if (this.pano) {
           this.visibleRect = new Rectangle(0, 0, getSize().width, getSize().height);
         } else {

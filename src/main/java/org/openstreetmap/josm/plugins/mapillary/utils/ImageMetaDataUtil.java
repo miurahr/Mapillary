@@ -1,10 +1,14 @@
 package org.openstreetmap.josm.plugins.mapillary.utils;
 
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 
+import javax.imageio.ImageIO;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -36,6 +40,25 @@ public class ImageMetaDataUtil {
     boolean pano;
     if (xmpxml != null) {
       pano= getPanorama(new StringReader(xmpxml));
+    } else {
+      pano = false;
+    }
+    return pano;
+  }
+
+  public static boolean getPanorama(final BufferedImage image) {
+    String xmpxml = null;
+    try {
+      ByteArrayOutputStream os = new ByteArrayOutputStream();
+      ImageIO.write(image, "jpeg", os);
+      xmpxml = Imaging.getXmpXml(os.toByteArray());
+    } catch (ImageReadException | IOException e) {
+      // Can't read XML metadata. use default instead.
+      return false;
+    }
+    boolean pano;
+    if (xmpxml != null) {
+      pano = getPanorama(new StringReader(xmpxml));
     } else {
       pano = false;
     }
