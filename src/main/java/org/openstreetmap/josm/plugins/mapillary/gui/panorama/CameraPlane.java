@@ -1,17 +1,23 @@
 // License: GPL. For details, see LICENSE file.
+// SPDX-License-Identifier: GPL-2.0-or-later
 package org.openstreetmap.josm.plugins.mapillary.gui.panorama;
 
 import java.awt.Point;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.stream.IntStream;
 
-public class CameraPlane {
-  private final int width;
-  private final int height;
-  private final double distance;
+import org.joml.Math;
+import org.joml.Vector2d;
+import org.joml.Vector3d;
 
-  private Vector3D[][] vectors;
+
+public class CameraPlane {
+
+  private Vector3d[][] vectors;
+  private int height;
+  private int width;
+  private double distance;
+
   private double theta;
   private double sinTheta;
   private double cosTheta;
@@ -24,10 +30,10 @@ public class CameraPlane {
     this.height = height;
     this.distance = distance;
     setRotation(0.0, 0.0);
-    vectors = new Vector3D[width][height];
+    vectors = new Vector3d[width][height];
     IntStream.range(0, height).parallel().forEach(y -> {
       IntStream.range(0, width).parallel().forEach(x -> {
-        vectors[x][y] = new Vector3D(x - width / 2d, y - height / 2d, distance).normalize();
+        vectors[x][y] = new Vector3d(x - width / 2.0d, y - height / 2.0d, distance).normalize();
       });
     });
   }
@@ -36,27 +42,27 @@ public class CameraPlane {
    * @param vector the vector for which the corresponding point on the camera plane will be returned
    * @return the point on the camera plane to which the given vector is mapped, nullable
    */
-  public Point getPoint(final Vector3D vector) {
-    final Vector3D rotatedVector = rotate(vector, -1);
-    if (rotatedVector.getZ() < 0) {
+  public Point getPoint(final Vector3d vector) {
+    final Vector3d rotatedVector = rotate(vector, -1);
+    if (rotatedVector.z < 0) {
       return null; // Ignores any points "behind the back", so they don't get painted a second time on the other side of the sphere
     }
     return new Point(
-      (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, Math.round(
-        rotatedVector.getX() / rotatedVector.getZ() * distance + width / 2d
+      (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, java.lang.Math.round(
+        rotatedVector.x / rotatedVector.z * distance + width / 2d
       ))),
-      (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, Math.round(
-        rotatedVector.getY() / rotatedVector.getZ() * distance + height / 2d
+      (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, java.lang.Math.round(
+        rotatedVector.y / rotatedVector.z * distance + height / 2d
       )))
     );
   }
 
-  Vector3D getVector3D(final Point p) {
-    Vector3D res;
+  Vector3d getVector3d(final Point p) {
+    Vector3d res;
     try {
-      res = rotate(vectors[p.x][p.y]);
+      res = rotate(vectors[p.x][p.y], 1);
     } catch (Exception e) {
-      res = new Vector3D(0, 0, 1);
+      res = new Vector3d(0, 0, 1);
     }
     return res;
   }
@@ -66,15 +72,15 @@ public class CameraPlane {
    * @param p Point within current plane.
    */
   public void setRotation(final Point p) {
-    setRotation(getVector3D(p));
+    setRotation(getVector3d(p));
   }
 
   public void setRotationFromDelta(final Point from, final Point to) {
-    Vector3D f1 = vectors[from.x][from.y];
-    Vector3D t1 = vectors[to.x][to.y];
-    double deltaTheta = Math.atan2(f1.getX(), f1.getZ()) - Math.atan2(t1.getX(), t1.getZ());
-    double deltaPhi = Math.atan2(f1.getY(), Math.sqrt(f1.getX() * f1.getX() + f1.getZ() * f1.getZ()))
-        - Math.atan2(t1.getY(), Math.sqrt(t1.getX() * t1.getX() + t1.getZ() * t1.getZ()));
+    Vector3d f1 = vectors[from.x][from.y];
+    Vector3d t1 = vectors[to.x][to.y];
+    double deltaTheta = Math.atan2(f1.x, f1.z) - Math.atan2(t1.x, t1.z);
+    double deltaPhi = Math.atan2(f1.y, Math.sqrt(f1.x * f1.x + f1.z * f1.z))
+        - Math.atan2(t1.y, Math.sqrt(t1.x * t1.x + t1.z * t1.z));
     double newTheta = theta + deltaTheta;
     double newPhi = phi + deltaPhi;
     setRotation(newTheta, newPhi);
@@ -84,11 +90,11 @@ public class CameraPlane {
    * Set camera plane rotation by spherical vector.
    * @param vec vector pointing new view position.
    */
-  public void setRotation(Vector3D vec) {
+  public void setRotation(Vector3d vec) {
     double theta, phi;
     try {
-      theta = Math.atan2(vec.getX(), vec.getZ());
-      phi = Math.atan2(vec.getY(), Math.sqrt(vec.getX() * vec.getX() + vec.getZ() * vec.getZ()));
+      theta = Math.atan2(vec.x, vec.z);
+      phi = Math.atan2(vec.y, Math.sqrt(vec.x * vec.x + vec.z * vec.z));
     } catch (Exception e) {
       theta = 0;
       phi = 0;
@@ -96,8 +102,8 @@ public class CameraPlane {
     setRotation(theta, phi);
   }
 
-  Vector3D getRotation() {
-    return new Vector3D(sinTheta, sinPhi, cosPhi * cosTheta);
+  Vector3d getRotation() {
+    return new Vector3d(sinTheta, sinPhi, cosPhi * cosTheta);
   }
 
   synchronized void setRotation(double theta, double phi) {
@@ -109,24 +115,20 @@ public class CameraPlane {
     this.cosPhi = Math.cos(phi);
   }
 
-  private Vector3D rotate(final Vector3D vec) {
-    return rotate(vec, 1);
-  }
-
-  private Vector3D rotate(final Vector3D vec, final int rotationFactor) {
+  private Vector3d rotate(final Vector3d vec, final int rotationFactor) {
     double vecX, vecY, vecZ;
-    vecZ = vec.getZ() * cosPhi - vec.getY() * sinPhi;
-    vecY = vec.getZ() * sinPhi + vec.getY() * cosPhi;
-    vecX = vecZ * sinTheta * rotationFactor + vec.getX() * cosTheta;
-    vecZ = vecZ * cosTheta - vec.getX() * sinTheta * rotationFactor;
-    return new Vector3D(vecX, vecY, vecZ);
+    vecZ = vec.z * cosPhi - vec.y * sinPhi;
+    vecY = vec.z * sinPhi + vec.y * cosPhi;
+    vecX = vecZ * sinTheta * rotationFactor + vec.x * cosTheta;
+    vecZ = vecZ * cosTheta - vec.x * sinTheta * rotationFactor;
+    return new Vector3d(vecX, vecY, vecZ);
   }
 
   public void mapping(BufferedImage sourceImage, BufferedImage targetImage) {
     IntStream.range(0, targetImage.getHeight()).parallel().forEach(y -> {
       IntStream.range(0, targetImage.getWidth()).forEach(x -> {
-        final Vector3D vec = getVector3D(new Point(x, y));
-        final Point2D.Double p = UVMapping.getTextureCoordinate(vec);
+        final Vector3d vec = getVector3d(new Point(x, y));
+        final Vector2d p = UVMapping.getTextureCoordinate(vec);
         targetImage.setRGB(x, y,
             sourceImage.getRGB((int) (p.x * (sourceImage.getWidth() - 1)), (int) (p.y * (sourceImage.getHeight() - 1)))
         );

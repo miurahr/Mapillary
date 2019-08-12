@@ -52,6 +52,7 @@ java.sourceCompatibility = JavaVersion.VERSION_1_8
 base.archivesBaseName = "Mapillary"
 
 dependencies {
+  packIntoJar("org.joml:joml:1.9.9")
   testImplementation ("org.openstreetmap.josm:josm-unittest:SNAPSHOT"){ isChanging = true }
   testImplementation("com.github.tomakehurst:wiremock:2.21.0")
   val junitVersion = "5.4.0"

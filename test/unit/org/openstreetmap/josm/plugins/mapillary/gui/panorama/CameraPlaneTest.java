@@ -1,16 +1,19 @@
 // License: GPL. For details, see LICENSE file.
+// SPDX-License-Identifier: GPL-2.0-or-later
 package org.openstreetmap.josm.plugins.mapillary.gui.panorama;
 
 import static org.junit.Assert.assertEquals;
 
 import java.awt.Point;
-import java.awt.geom.Point2D;
 
+import org.joml.Vector2d;
+import org.joml.Vector3d;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.openstreetmap.josm.plugins.mapillary.utils.TestUtil.MapillaryTestRules;
 import org.openstreetmap.josm.testutils.JOSMTestRules;
+
 
 public class CameraPlaneTest {
 
@@ -24,34 +27,34 @@ public class CameraPlaneTest {
   @Test
   public void testSetRotation() {
     cameraPlane = new CameraPlane(800, 400, CAMERA_PLANE_DISTANCE);
-    Vector3D vec = new Vector3D(0, 0, 1);
+    Vector3d vec = new Vector3d(0, 0, 1);
     cameraPlane.setRotation(vec);
-    Vector3D out = cameraPlane.getRotation();
-    assertEquals(0, out.getX(), 0.001);
-    assertEquals(0, out.getY(), 0.001);
-    assertEquals(1, out.getZ(), 0.001);
+    Vector3d out = cameraPlane.getRotation();
+    assertEquals(0, out.x, 0.001);
+    assertEquals(0, out.y, 0.001);
+    assertEquals(1, out.z, 0.001);
   }
 
   @Test
-  public void testGetVector3D() {
+  public void testGetVector3d() {
     cameraPlane = new CameraPlane(800, 600, CAMERA_PLANE_DISTANCE);
-    Vector3D vec = new Vector3D(0, 0, 1);
+    Vector3d vec = new Vector3d(0, 0, 1);
     cameraPlane.setRotation(vec);
-    Vector3D out = cameraPlane.getVector3D(new Point(400, 300));
-    assertEquals(0.0, out.getX(), 1.0E-04);
-    assertEquals(0.0, out.getY(), 1.0E-04);
-    assertEquals(1.0, out.getZ(), 1.0E-04);
+    Vector3d out = cameraPlane.getVector3d(new Point(400, 300));
+    assertEquals(0.0, out.x, 1.0E-04);
+    assertEquals(0.0, out.y, 1.0E-04);
+    assertEquals(1.0, out.z, 1.0E-04);
   }
 
   @Test
   public void testMapping() {
     cameraPlane = new CameraPlane(800, 600, CAMERA_PLANE_DISTANCE);
-    Vector3D vec = new Vector3D(0, 0, 1);
+    Vector3d vec = new Vector3d(0, 0, 1);
     cameraPlane.setRotation(vec);
-    Vector3D out = cameraPlane.getVector3D(new Point(300, 200));
-    Point2D map = UVMapping.getTextureCoordinate(out);
-    assertEquals(0.44542099, map.getX(), 1e-8);
-    assertEquals(0.39674936, map.getY(), 1e-8);
+    Vector3d out = cameraPlane.getVector3d(new Point(300, 200));
+    Vector2d map = UVMapping.getTextureCoordinate(out);
+    assertEquals(0.44542099, map.x, 1e-8);
+    assertEquals(0.39674936, map.y, 1e-8);
   }
 }
 
